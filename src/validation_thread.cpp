@@ -1,4 +1,5 @@
 #include "chainparams.h"
+#include "utilioprio.h"
 #include "validation.h"
 #include "validationinterface.h"
 #include "net.h"
@@ -8,7 +9,11 @@ std::atomic<bool> fActivateChain(true);
 
 void CConnman::ThreadValidation()
 {
-    int nSleep;
+    {
+    IOPRIO_IDLER(true);
+
+    LogPrintf("%s: Starting\n", __func__);
+    int nSleep = 0;
     while (!flagInterruptMsgProc) {
         if (fActivateChain && !fActivatingChain) {
             fActivateChain = false;
@@ -23,5 +28,7 @@ void CConnman::ThreadValidation()
         else
             nSleep = 0;
     }
+
+    } // end IOPRIO_IDLER scope
 }
 
