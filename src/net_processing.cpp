@@ -1229,8 +1229,7 @@ static void ProcessGetData(const Config &config, CNode *pfrom,
                 if (send && (mi->second->nStatus & BLOCK_HAVE_DATA)) {
                     // Send block from disk
                     CBlock block;
-                    if (!ReadBlockFromDisk(block, (*mi).second,
-                                           consensusParams)) {
+                    if (!ReadBlockFromDisk(block, (*mi).second, consensusParams, 1)) {
                         assert(!"cannot load block from disk");
                     }
 

@@ -33,6 +33,7 @@
 #include "ui_interface.h"
 #include "undo.h"
 #include "util.h"
+#include "utilioprio.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
 #include "validationinterface.h"
@@ -1090,7 +1091,7 @@ bool GetTransaction(const Config &config, const uint256 &txid,
         auto &params = config.GetChainParams().GetConsensus();
 
         CBlock block;
-        if (ReadBlockFromDisk(block, pindexSlow, params)) {
+        if (ReadBlockFromDisk(block, pindexSlow, params, 1)) {
             for (const auto &tx : block.vtx) {
                 if (tx->GetId() == txid) {
                     txOut = tx;
@@ -1130,9 +1131,12 @@ bool WriteBlockToDisk(const CBlock &block, CDiskBlockPos &pos,
     return true;
 }
 
-bool ReadBlockFromDisk(CBlock &block, const CDiskBlockPos &pos,
-                       const Consensus::Params &consensusParams) {
+bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos, const Consensus::Params& consensusParams, const bool lowprio /*=false*/)
+{
     block.SetNull();
+
+    {
+    IOPRIO_IDLER(lowprio);
 
     // Open history file to read
     CAutoFile filein(OpenBlockFile(pos, true), SER_DISK, CLIENT_VERSION);
@@ -1148,6 +1152,8 @@ bool ReadBlockFromDisk(CBlock &block, const CDiskBlockPos &pos,
                      e.what(), pos.ToString());
     }
 
+    } // end IOPRIO_IDLER scope
+
     // Check the header
     if (!CheckProofOfWork(block.GetHash(), block.nBits, consensusParams))
         return error("ReadBlockFromDisk: Errors in block header at %s",
@@ -1156,9 +1162,8 @@ bool ReadBlockFromDisk(CBlock &block, const CDiskBlockPos &pos,
     return true;
 }
 
-bool ReadBlockFromDisk(CBlock &block, const CBlockIndex *pindex,
-                       const Consensus::Params &consensusParams) {
-    if (!ReadBlockFromDisk(block, pindex->GetBlockPos(), consensusParams))
+bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex, const Consensus::Params& consensusParams, const bool lowprio /*=false*/) {
+    if (!ReadBlockFromDisk(block, pindex->GetBlockPos(), consensusParams, lowprio))
         return false;
     if (block.GetHash() != pindex->GetBlockHash())
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*): GetHash() "
@@ -2529,8 +2534,7 @@ static bool ConnectTip(const Config &config, CValidationState &state,
     if (!pblock) {
         std::shared_ptr<CBlock> pblockNew = std::make_shared<CBlock>();
         connectTrace.blocksConnected.emplace_back(pindexNew, pblockNew);
-        if (!ReadBlockFromDisk(*pblockNew, pindexNew,
-                               chainparams.GetConsensus())) {
+        if (!ReadBlockFromDisk(*pblockNew, pindexNew, chainparams.GetConsensus(), 1)) {
             LogPrintf("%s: ReadBlockFromDisk failed height=%d file=%d\n", __func__, pindexNew->nHeight,
                 pindexNew->nFile);
             return AbortNode(state, "Failed to read block");
