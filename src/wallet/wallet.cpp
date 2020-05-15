@@ -11,6 +11,7 @@
 #include "config.h"
 #include "consensus/consensus.h"
 #include "consensus/validation.h"
+#include "init.h"
 #include "key.h"
 #include "keystore.h"
 #include "net.h"
@@ -1759,6 +1760,7 @@ CBlockIndex *CWallet::ScanForWalletTransactions(CBlockIndex *pindexStart,
             ret = nullptr;
         }
 
+        if (ShutdownRequested()) return nullptr;
         pindex = chainActive.Next(pindex);
         if (GetTime() >= nNow + 60) {
             nNow = GetTime();
