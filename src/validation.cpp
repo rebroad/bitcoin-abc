@@ -4025,6 +4025,7 @@ CBlockIndex *InsertBlockIndex(uint256 hash) {
 static bool LoadBlockIndexDB(const CChainParams &chainparams) {
     LogPrintf("%s: Loading guts\n", __func__);
     if (!pblocktree->LoadBlockIndexGuts(InsertBlockIndex)) return false;
+    if (ShutdownRequested()) return false;
 
     boost::this_thread::interruption_point();
 
@@ -4037,7 +4038,9 @@ static bool LoadBlockIndexDB(const CChainParams &chainparams) {
         vSortedByHeight.push_back(std::make_pair(pindex->nHeight, pindex));
     }
     LogPrintf("%s: vSortedByHeight.size() = %d\n", __func__, vSortedByHeight.size());
+    if (ShutdownRequested()) return false;
     sort(vSortedByHeight.begin(), vSortedByHeight.end());
+    if (ShutdownRequested()) return false;
     for (const std::pair<int, CBlockIndex *> &item : vSortedByHeight) {
         CBlockIndex *pindex = item.second;
         pindex->nChainWork = (pindex->pprev ? pindex->pprev->nChainWork : 0) +
@@ -4083,6 +4086,7 @@ static bool LoadBlockIndexDB(const CChainParams &chainparams) {
     pblocktree->ReadLastBlockFile(nLastBlockFile);
     vinfoBlockFile.resize(nLastBlockFile + 1);
     LogPrintf("%s: last block file = %i\n", __func__, nLastBlockFile);
+    if (ShutdownRequested()) return false;
     for (int nFile = 0; nFile <= nLastBlockFile; nFile++) {
         pblocktree->ReadBlockFileInfo(nFile, vinfoBlockFile[nFile]);
     }
@@ -4113,6 +4117,7 @@ static bool LoadBlockIndexDB(const CChainParams &chainparams) {
                 .IsNull()) {
             return false;
         }
+        if (ShutdownRequested()) return false;
     }
 
     // Check whether we have ever pruned block & undo files
