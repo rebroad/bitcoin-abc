@@ -1582,6 +1582,7 @@ bool AbortNode(const std::string &strMessage,
                                 "debug.log for details")
                             : userMessage,
         "", CClientUIInterface::MSG_ERROR);
+    LogPrintf("%s: Call StartShutdown()\n", __func__);
     StartShutdown();
     return false;
 }

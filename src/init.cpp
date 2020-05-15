@@ -128,6 +128,7 @@ std::atomic<bool> fRequestShutdown(false);
 std::atomic<bool> fDumpMempoolLater(false);
 
 void StartShutdown() {
+    LogPrintf("%s: fRequestShutdown = true\n", __func__);
     fRequestShutdown = true;
 }
 bool ShutdownRequested() {
@@ -265,6 +266,7 @@ void Shutdown() {
  * Signal handlers are very limited in what they are allowed to do, so:
  */
 void HandleSIGTERM(int) {
+    LogPrintf("%s: fRequestShutdown = true\n", __func__);
     fRequestShutdown = true;
 }
 
@@ -1030,7 +1032,7 @@ void ThreadImport(const Config &config,
         if (chainActive.Tip() == NULL) {
             CValidationState state;
             if (!ActivateBestChain(config, state)) {
-                LogPrintf("Failed to connect best block");
+                LogPrintf("%s: Failed to connect best block. StartShutdown\n", __func__);
                 StartShutdown();
             }
         }
