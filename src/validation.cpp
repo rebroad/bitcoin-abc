@@ -1098,7 +1098,8 @@ bool GetTransaction(const Config &config, const uint256 &txid,
                     return true;
                 }
             }
-        }
+        } else
+            LogPrintf("%s: ReadBlockFromDisk failed\n", __func__);
     }
 
     return false;
@@ -2404,7 +2405,7 @@ static void UpdateTip(const Config &config, CBlockIndex *pindexNew) {
     }
     LogPrintf(
         "%s: new best=%s height=%d version=0x%08x log2_work=%.8g tx=%lu "
-        "date='%s' progress=%f cache=%.1fMiB(%utxo)",
+        "date='%s' progress=%f cache=%.1fMiB(%utxo) file=%d",
         __func__, chainActive.Tip()->GetBlockHash().ToString(),
         chainActive.Height(), chainActive.Tip()->nVersion,
         log(chainActive.Tip()->nChainWork.getdouble()) / log(2.0),
@@ -2413,7 +2414,7 @@ static void UpdateTip(const Config &config, CBlockIndex *pindexNew) {
                           chainActive.Tip()->GetBlockTime()),
         GuessVerificationProgress(chainParams.TxData(), chainActive.Tip()),
         pcoinsTip->DynamicMemoryUsage() * (1.0 / (1 << 20)),
-        pcoinsTip->GetCacheSize());
+        pcoinsTip->GetCacheSize(), chainActive.Tip()->nFile);
     if (!warningMessages.empty())
         LogPrintf(" warning='%s'",
                   boost::algorithm::join(warningMessages, ", "));
@@ -2434,6 +2435,7 @@ static bool DisconnectTip(const Config &config, CValidationState &state,
     // Read block from disk.
     CBlock block;
     if (!ReadBlockFromDisk(block, pindexDelete, consensusParams)) {
+        LogPrintf("%s: ReadBlockFromDisk failed\n", __func__);
         return AbortNode(state, "Failed to read block");
     }
 
@@ -2528,8 +2530,11 @@ static bool ConnectTip(const Config &config, CValidationState &state,
         std::shared_ptr<CBlock> pblockNew = std::make_shared<CBlock>();
         connectTrace.blocksConnected.emplace_back(pindexNew, pblockNew);
         if (!ReadBlockFromDisk(*pblockNew, pindexNew,
-                               chainparams.GetConsensus()))
+                               chainparams.GetConsensus())) {
+            LogPrintf("%s: ReadBlockFromDisk failed height=%d file=%d\n", __func__, pindexNew->nHeight,
+                pindexNew->nFile);
             return AbortNode(state, "Failed to read block");
+        }
     } else {
         connectTrace.blocksConnected.emplace_back(pindexNew, pblock);
     }
@@ -4137,11 +4142,11 @@ static bool LoadBlockIndexDB(const CChainParams &chainparams) {
     PruneBlockIndexCandidates();
 
     LogPrintf(
-        "%s: hashBestChain=%s height=%d date=%s progress=%f\n", __func__,
+        "%s: hashBestChain=%s height=%d date=%s progress=%f file=%d\n", __func__,
         chainActive.Tip()->GetBlockHash().ToString(), chainActive.Height(),
-        DateTimeStrFormat("%Y-%m-%d %H:%M:%S",
-                          chainActive.Tip()->GetBlockTime()),
-        GuessVerificationProgress(chainparams.TxData(), chainActive.Tip()));
+        DateTimeStrFormat("%Y-%m-%d %H:%M:%S", chainActive.Tip()->GetBlockTime()),
+        GuessVerificationProgress(chainparams.TxData(), chainActive.Tip()),
+        chainActive.Tip()->nFile);
 
     return true;
 }
