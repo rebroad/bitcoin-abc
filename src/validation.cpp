@@ -4113,9 +4113,8 @@ static bool LoadBlockIndexDB(const CChainParams &chainparams) {
     for (std::set<int>::iterator it = setBlkDataFiles.begin();
          it != setBlkDataFiles.end(); it++) {
         CDiskBlockPos pos(*it, 0);
-        if (CAutoFile(OpenBlockFile(pos, true), SER_DISK, CLIENT_VERSION)
-                .IsNull()) {
-            return false;
+        if (CAutoFile(OpenBlockFile(pos, true), SER_DISK, CLIENT_VERSION).IsNull()) {
+            PruneOneBlockFile(*it);
         }
         if (ShutdownRequested()) return false;
     }
