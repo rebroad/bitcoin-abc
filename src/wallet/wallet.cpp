@@ -4142,7 +4142,7 @@ CWallet *CWallet::CreateWalletFromFile(const std::string walletFile) {
         }
     }
 
-    if (chainActive.Tip() && chainActive.Tip() != pindexRescan) {
+    if (chainActive.Tip() && chainActive.Tip() != pindexRescan && pindexRescan->nHeight) {
         // We can't rescan beyond non-pruned blocks, stop and throw an error.
         // This might happen if a user uses a old wallet within a pruned node or
         // if he ran -disablewallet for a longer time, then decided to
