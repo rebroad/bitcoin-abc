@@ -4018,6 +4018,7 @@ CBlockIndex *InsertBlockIndex(uint256 hash) {
 }
 
 static bool LoadBlockIndexDB(const CChainParams &chainparams) {
+    LogPrintf("%s: Loading guts\n", __func__);
     if (!pblocktree->LoadBlockIndexGuts(InsertBlockIndex)) return false;
 
     boost::this_thread::interruption_point();
@@ -4025,10 +4026,12 @@ static bool LoadBlockIndexDB(const CChainParams &chainparams) {
     // Calculate nChainWork
     std::vector<std::pair<int, CBlockIndex *>> vSortedByHeight;
     vSortedByHeight.reserve(mapBlockIndex.size());
+    LogPrintf("%s: mapBlockIndex.size() = %d\n", __func__, mapBlockIndex.size());
     for (const std::pair<uint256, CBlockIndex *> &item : mapBlockIndex) {
         CBlockIndex *pindex = item.second;
         vSortedByHeight.push_back(std::make_pair(pindex->nHeight, pindex));
     }
+    LogPrintf("%s: vSortedByHeight.size() = %d\n", __func__, vSortedByHeight.size());
     sort(vSortedByHeight.begin(), vSortedByHeight.end());
     for (const std::pair<int, CBlockIndex *> &item : vSortedByHeight) {
         CBlockIndex *pindex = item.second;

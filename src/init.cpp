@@ -1936,24 +1936,31 @@ bool AppInitMain(Config &config, boost::thread_group &threadGroup,
         nStart = GetTimeMillis();
         do {
             try {
+                LogPrintf("%s: UnloadBlockIndex()\n", __func__);
                 UnloadBlockIndex();
                 delete pcoinsTip;
                 delete pcoinsdbview;
                 delete pcoinscatcher;
                 delete pblocktree;
 
+                LogPrintf("%s: CBlockTreeDB()\n", __func__);
                 pblocktree =
                     new CBlockTreeDB(nBlockTreeDBCache, false, fReindex);
+                LogPrintf("%s: CCoinsViewDB()\n", __func__);
                 pcoinsdbview = new CCoinsViewDB(nCoinDBCache, false,
                                                 fReindex || fReindexChainState);
+                LogPrintf("%s: CCoinsViewErrorCatcher()\n", __func__);
                 pcoinscatcher = new CCoinsViewErrorCatcher(pcoinsdbview);
+                LogPrintf("%s: CCoinsViewCache()\n", __func__);
                 pcoinsTip = new CCoinsViewCache(pcoinscatcher);
 
                 if (fReindex) {
+                    LogPrintf("%s: WriteReindexing()\n", __func__);
                     pblocktree->WriteReindexing(true);
                     // If we're reindexing in prune mode, wipe away unusable
                     // block files and all undo data files
                     if (fPruneMode) {
+                        LogPrintf("%s: CleanupBlockRevFiles()\n", __func__);
                         CleanupBlockRevFiles();
                     }
                 } else if (!pcoinsdbview->Upgrade()) {
@@ -1961,6 +1968,7 @@ bool AppInitMain(Config &config, boost::thread_group &threadGroup,
                     break;
                 }
 
+                LogPrintf("%s: LoadBlockIndex()\n", __func__);
                 if (!LoadBlockIndex(chainparams)) {
                     strLoadError = _("Error loading block database");
                     break;
